@@ -1,5 +1,4 @@
-# Rerm
-    _______  _______  _______  _______ 
+     _______  _______  _______  _______ 
     (  ____ )(  ____ \(  ____ )(       )
     | (    )|| (    \/| (    )|| () () |
     | (____)|| (__    | (____)|| || || |
@@ -13,6 +12,9 @@ Rerm is a chess engine written enterely from scratch in the Rust language.
 
 # Features
 no current features.
+
+# Upcoming Features
+Adding bitboard representation for the chessboard.
 
 # Protocols
 no protocls implemented.
