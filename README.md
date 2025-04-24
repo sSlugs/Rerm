@@ -20,6 +20,5 @@ manipulation functions for board.
 
 board initialization functions for board.
 
-
 # Protocols
 no protocls implemented.
