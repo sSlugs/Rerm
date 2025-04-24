@@ -1,8 +1,10 @@
 pub mod board;
 use board::board::*;
+pub mod move_gen;
+use move_gen::pseudo_gen::*;
 
 fn main() {
-    let mut bd = Board::init_new();
+    let bd = Board::init_new();
 
     bd.print();
 }

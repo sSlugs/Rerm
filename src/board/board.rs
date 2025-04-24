@@ -35,6 +35,9 @@ pub struct Board {
     pub occupancy: [Bitboard; 3], // 0:white piece, 1:black piece, 3:any piece
 
     pub mailbox: [u8;64],
+
+    turn: Colour,
+    castle_rights: u8,
 }
 
 impl Board { // Board manipulation functions
@@ -117,7 +120,7 @@ impl Board { // Init functions
                         ]],
 
             occupancy: [0b00000000_00000000_00000000_00000000_00000000_00000000_11111111_11111111,
-                        0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
+                        0b11111111_11111111_00000000_00000000_00000000_00000000_00000000_00000000,
                         0b11111111_11111111_00000000_00000000_00000000_00000000_11111111_11111111],
 
             mailbox: [
@@ -130,6 +133,8 @@ impl Board { // Init functions
                 6, 6, 6, 6, 6, 6, 6, 6,
                 9, 7, 8, 10,11, 8, 7, 9,
             ],
+            turn: Colour::White,
+            castle_rights: 0b0000_1111,
         }
     }
 
@@ -138,6 +143,9 @@ impl Board { // Init functions
             pieces: [[0;6];2],
             occupancy: [0;3],
             mailbox: [0xFF; 64],  // 0xFF means “no piece”
+
+            turn: Colour::White,
+            castle_rights: 0b0000_1111,
         }
     }
 }
