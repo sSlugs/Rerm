@@ -1,7 +1,7 @@
 pub mod prelude;
 pub mod board;
-use board::*;
+use board::board::*;
 
 fn main() {
-    println!("Hello, world!");
+    let main_board = Board::init_new();
 }

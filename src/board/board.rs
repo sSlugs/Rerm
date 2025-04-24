@@ -1,6 +1,19 @@
 pub type Bitboard = u64;
 pub const EMPTY: Bitboard = 0;
 
+// Masks
+pub const BITMASKS: [u64; 64] = {
+    let mut m = [0u64; 64];
+    let mut i = 0;
+    while i < 64 {
+        m[i] = 1u64 << i;
+        i += 1;
+    }
+    m
+};
+
+// board
+
 pub struct Board {
     pieces: [[Bitboard; 6];2], // 6 pieces 2 colours || 0:white,1:black || 0:pawn,1:knight,2:bishop,3:rook,4:queen,5:king
 
@@ -8,7 +21,9 @@ pub struct Board {
 }
 
 impl Board { // Board manipulation functions
+    pub fn set_square(&mut self,sq: u64,piece:) {
 
+    }
 }
 
 impl Board { // Init functions
@@ -34,4 +49,26 @@ impl Board { // Init functions
                         0b11111111_11111111_00000000_00000000_00000000_00000000_11111111_11111111],
         }
     }
+}
+
+// bit manipulation 
+#[inline(always)]
+pub fn set_bit(bb: &mut u64, sq: u8) {
+    // safe, bounds-checked
+    *bb |= BITMASKS[sq as usize];
+}
+
+#[inline(always)]
+pub fn clear_bit(bb: &mut u64, sq: u8) {
+    *bb &= !BITMASKS[sq as usize];
+}
+
+#[inline(always)]
+pub fn toggle_bit(bb: &mut u64, sq: u8) {
+    *bb ^= BITMASKS[sq as usize];
+}
+
+#[inline(always)]
+pub fn is_set(bb: u64, sq: u8) -> bool {
+    bb & BITMASKS[sq as usize] != 0
 }
