@@ -1,4 +1,6 @@
 pub type Bitboard = u64;
+const EMPTY: u8 = 0xFF;
+
 
 // Masks
 pub const BITMASKS: [u64; 64] = {
@@ -37,7 +39,7 @@ pub struct Board {
     pub mailbox: [u8;64],
 
     turn: Colour,
-    castle_rights: u8,
+    castle_rights: u8, // "1111" = Can castle, first 4 bits (right) is white
 }
 
 impl Board { // Board manipulation functions
@@ -48,7 +50,7 @@ impl Board { // Board manipulation functions
 
 
         let old = self.mailbox[sq];
-        if old != 0xFF && old as usize != idx_new {
+        if old != EMPTY && old as usize != idx_new {
 
             self.pieces[old as usize / 6][old as usize % 6] ^= m;
 
@@ -69,21 +71,24 @@ impl Board { // Board manipulation functions
     pub fn clear_square(&mut self,sq: usize) { //clears square on board
         let old = self.mailbox[sq];
 
-        if old == 0xFF { return; }
+        if old == EMPTY { return; }
 
         let nm       = !BITMASKS[sq];
         self.pieces[old as usize / 6][old as usize % 6] ^= nm;
         self.occupancy[old as usize / 6] ^= nm;
         self.occupancy[2]               ^= nm;
 
-        self.mailbox[sq] = 0xFF;
+        self.mailbox[sq] = EMPTY;
     }
 
     #[inline(always)]
     pub fn piece_at_square(&mut self,sq: usize) -> Option<(PieceType,Colour)> { // returns piecetype and colour of square of board
+        if sq > 63 {
+            panic!("piece_at_square: OOB error, sq given does not exist on the board!")
+        }
         let square = self.mailbox[sq];
 
-        if square == 0xFF {return None;}
+        if square == EMPTY {return None;}
 
         let colour = if square < 6 { Colour::White } else { Colour::Black };
         let piece = match square % 6 {
@@ -126,15 +131,15 @@ impl Board { // Init functions
             mailbox: [
                 3, 1, 2, 4, 5, 2, 1, 3,
                 0, 0, 0, 0, 0, 0, 0, 0,
-                0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
-                0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
-                0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 
-                0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+                EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,
+                EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,
+                EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY, 
+                EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,
                 6, 6, 6, 6, 6, 6, 6, 6,
                 9, 7, 8, 10,11, 8, 7, 9,
             ],
             turn: Colour::White,
-            castle_rights: 0b0000_1111,
+            castle_rights: 0b1111_1111,
         }
     }
 
@@ -142,10 +147,10 @@ impl Board { // Init functions
         Board {
             pieces: [[0;6];2],
             occupancy: [0;3],
-            mailbox: [0xFF; 64],  // 0xFF means “no piece”
+            mailbox: [EMPTY; 64],  // EMPTY means “no piece”
 
             turn: Colour::White,
-            castle_rights: 0b0000_1111,
+            castle_rights: 0b1111_1111,
         }
     }
 }
@@ -157,7 +162,7 @@ impl Board { // UI / UX
             for file in 0..8 {
                 let sq = rank * 8 + file;
                 let glyph = match self.mailbox[sq] {
-                    0xFF => '.',
+                    EMPTY => '.',
                     idx => {
                         let idx = idx as usize;
                         let color = if idx < 6 { Colour::White } else { Colour::Black };
