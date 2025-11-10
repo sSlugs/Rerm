@@ -1,5 +1,5 @@
 pub type Bitboard = u64;
-const EMPTY: u8 = 0xFF;
+pub const EMPTY: u8 = 0xFF;
 
 
 // Masks
@@ -34,11 +34,11 @@ pub enum PieceType {
 pub struct Board {
     pub pieces: [[Bitboard; 6];2], // 6 pieces 2 colours || 0:white,1:black || 0:pawn,1:knight,2:bishop,3:rook,4:queen,5:king
 
-    pub occupancy: [Bitboard; 3], // 0:white piece, 1:black piece, 3:any piece
+    pub occupancy: [Bitboard; 3], // 0:white piece, 1:black piece, 2:any piece
 
     pub mailbox: [u8;64],
 
-    turn: Colour,
+    pub turn: Colour,
     castle_rights: u8, // "1111" = Can castle, first 4 bits (right) is white
 }
 
