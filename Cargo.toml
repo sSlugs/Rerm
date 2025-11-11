@@ -3,6 +3,12 @@ name = "Rerm"
 version = "0.1.0"
 edition = "2024"
 
+[profile.release]
+opt-level = 3         # default for release, but being explicit is fine
+lto = "thin"
+codegen-units = 1
+panic = "abort"       # smaller binary, sometimes a bit faster
+
 [dependencies]
 clap = "4.5.37"
 thiserror = "2.0.12"

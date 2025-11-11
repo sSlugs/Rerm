@@ -1,7 +1,6 @@
 pub type Bitboard = u64;
 pub const EMPTY: u8 = 0xFF;
 
-
 // Masks
 pub const BITMASKS: [u64; 64] = {
     let mut m = [0u64; 64];
@@ -15,8 +14,17 @@ pub const BITMASKS: [u64; 64] = {
 
 // Enums
 #[repr(usize)]
-#[derive(Copy, Clone,PartialEq,Debug)]
+#[derive(Copy, Clone,PartialEq,Debug,Eq)]
 pub enum Colour { White = 0, Black = 1 }
+
+impl Colour {
+    pub fn opposite(self) -> Self {
+        match self {
+            Colour::White => Colour::Black,
+            Colour::Black => Colour::White,
+        }
+    }
+}
 
 #[repr(usize)]
 #[derive(Copy, Clone,PartialEq,Debug)]
@@ -39,7 +47,9 @@ pub struct Board {
     pub mailbox: [u8;64],
 
     pub turn: Colour,
-    castle_rights: u8, // "1111" = Can castle, first 4 bits (right) is white
+    pub castle_rights: u8, // "1111" = Can castle, first 4 bits (right) is white
+
+    pub ep_sq: Option<u64>,
 }
 
 impl Board { // Board manipulation functions
@@ -140,6 +150,8 @@ impl Board { // Init functions
             ],
             turn: Colour::White,
             castle_rights: 0b1111_1111,
+
+            ep_sq: None,
         }
     }
 
@@ -151,6 +163,7 @@ impl Board { // Init functions
 
             turn: Colour::White,
             castle_rights: 0b1111_1111,
+            ep_sq: None,
         }
     }
 }

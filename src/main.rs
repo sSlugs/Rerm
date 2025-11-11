@@ -5,9 +5,14 @@ use move_gen::pseudo_gen::*;
 pub mod tests;
 
 fn main() {
-    let bd = Board::init_new();
+    let mut bd = Board::init_new();
 
-    let n = rook_attacks(27, bd.occupancy,bd.turn);
+    bd.set_square(0, Colour::White, PieceType::Pawn);
+    bd.set_square(9, Colour::Black, PieceType::Pawn);
+
+    //let n = pawn_attacks(&bd.pieces,&bd.occupancy,bd.turn,bd.ep_sq).2;
+
+    let n = knight_attacks(35,&bd.occupancy,bd.turn);
 
     let bin = format!("{:064b}", n);
 
@@ -17,7 +22,5 @@ fn main() {
         let line: String = chunk.iter().rev().map(|&c| c as char).collect();
         println!("{}", line);
     }
-
-    
 
 }
