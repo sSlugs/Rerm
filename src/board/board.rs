@@ -1,16 +1,17 @@
-pub type Bitboard = u64;
-pub const EMPTY: u8 = 0xFF;
+use crate::{constants::*, move_gen::pseudo_gen::{bishop_attacks, rook_attacks}};
+use std::ops::Not;
 
-// Masks
-pub const BITMASKS: [u64; 64] = {
-    let mut m = [0u64; 64];
-    let mut i = 0;
-    while i < 64 {
-        m[i] = 1u64 << i;
-        i += 1;
+impl Not for Colour {
+    type Output = Colour;
+
+    #[inline(always)]
+    fn not(self) -> Colour {
+        match self {
+            Colour::White => Colour::Black,
+            Colour::Black => Colour::White,
+        }
     }
-    m
-};
+}
 
 // Enums
 #[repr(usize)]
@@ -26,8 +27,8 @@ impl Colour {
     }
 }
 
-#[repr(usize)]
-#[derive(Copy, Clone,PartialEq,Debug)]
+#[repr(u8)]
+#[derive(Copy, Clone,PartialEq,Debug,Eq)]
 pub enum PieceType {
     Pawn   = 0,
     Knight = 1,
@@ -47,9 +48,11 @@ pub struct Board {
     pub mailbox: [u8;64],
 
     pub turn: Colour,
-    pub castle_rights: u8, // "1111" = Can castle, first 4 bits (right) is white
+    pub castle_rights: u8, // first 4 bits respecetivley 0000. wqc wkc bqc bkc 0001 0010 0100 1000, 1 means castling allowed
 
     pub ep_sq: Option<u64>,
+
+    pub halfmove_clock: u8,
 }
 
 impl Board { // Board manipulation functions
@@ -113,7 +116,79 @@ impl Board { // Board manipulation functions
 
         return Some((piece,colour));
     }
+}
 
+impl Board { // Check/Help functions
+
+    #[inline(always)]
+    fn king_square(&self) -> usize {
+        let king_bb = self.pieces[self.turn as usize][5];
+        king_bb.trailing_zeros() as usize
+        //ifu r getting errors here or at is_square_attacked its bc ur using an empty board and there isnt a king so its overflowing at 64 and u didnt wanna add error handling
+    }
+
+    #[inline(always)]
+    pub fn in_check(&self) -> bool {
+        let ks = self.king_square();
+        self.is_square_attacked(ks, self.turn.opposite())
+    }
+
+    #[inline(always)]
+    pub fn is_square_attacked(&self, sq: usize, by: Colour) -> bool {
+        let enemy  = by as usize;
+        let occ    = &self.occupancy;
+        let pieces = &self.pieces;
+        let bb_sq: Bitboard = 1u64 << sq;
+
+        // 1) pawn attacks
+        if by as usize == 0 {
+            // white pawns attack up-left / up-right
+            let pawns = pieces[enemy][0];
+            let attacks =
+                ((pawns << 7) & !FILE_H) |
+                ((pawns << 9) & !FILE_A);
+            if attacks & bb_sq != 0 {
+                return true;
+            }
+        } else {
+            // black pawns attack down-left / down-right
+            let pawns = pieces[enemy][0];
+            let attacks =
+                ((pawns >> 7) & !FILE_A) |
+                ((pawns >> 9) & !FILE_H);
+            if attacks & bb_sq != 0 {
+                return true;
+            }
+        }
+
+        // 2) knights
+        let knights = pieces[enemy][1];
+        if KNIGHT_ATTACKS[sq] & knights != 0 {
+            return true;
+        }
+
+        // 3) bishops / queens (diagonals)
+        let bishops_queens =
+            pieces[enemy][3] | pieces[enemy][4];
+        if bishop_attacks(sq, &occ,self.turn) & bishops_queens != 0 {
+            return true;
+        }
+
+        // 4) rooks / queens (orthogonal)
+        let rooks_queens =
+            pieces[enemy][3] | pieces[enemy][4];
+        if rook_attacks(sq, &occ,self.turn) & rooks_queens != 0 {
+            return true;
+        }
+
+        // 5) king
+        let enemy_king = pieces[enemy][5];
+        if KING_ATTACKS[sq] & enemy_king != 0 {
+            return true;
+        }
+
+        false
+    }
 }
 
 impl Board { // Init functions
@@ -149,9 +224,11 @@ impl Board { // Init functions
                 9, 7, 8, 10,11, 8, 7, 9,
             ],
             turn: Colour::White,
-            castle_rights: 0b1111_1111,
+            castle_rights: 0b0000_1111,
 
             ep_sq: None,
+
+            halfmove_clock: 0,
         }
     }
 
@@ -162,8 +239,10 @@ impl Board { // Init functions
             mailbox: [EMPTY; 64],  // EMPTY means “no piece”
 
             turn: Colour::White,
-            castle_rights: 0b1111_1111,
+            castle_rights: 0b0000_1111,
             ep_sq: None,
+
+            halfmove_clock: 0,
         }
     }
 }

@@ -1,4 +1,5 @@
 use crate::board::board::PieceType;
+use crate::board::moves::Move;
 use std::time::Instant;
 use crate::move_gen::pseudo_gen::{bishop_attacks, pawn_attacks, queen_attacks, rook_attacks,knight_attacks,king_attacks};
 use crate::board::board::*;
@@ -152,20 +153,51 @@ fn bench_pawn_attacks() {
 #[test]
 fn bench_board_manipulation() {
 
-    let mut bd = Board::init_empty();
+    let mut bd = Board::init_new();
 
     let sq = 27;
     let runs = 1_000_000;
 
     // warm up
     for _ in 0..100 {
-        bd.set_square(sq, Colour::White,PieceType::Pawn);
+        bd.in_check();
     }
 
     // time measurement
     let start = Instant::now();
     for _ in 0..runs {
-        bd.set_square(sq, Colour::White,PieceType::Pawn);
+        bd.in_check();
+    }
+    let dur = start.elapsed();
+
+    let ns_per_call = (dur.as_secs_f64() * 1e9) / (runs as f64);
+    println!("rook_attacks avg: {:.3} ns/call", ns_per_call);
+}
+
+#[test]
+fn bench_push_pseudo_move() {
+
+    let mut bd = Board::init_new();
+
+    let mv: Move = Move{
+        from: 10,
+        to: 18,
+        promotion_piece: None, 
+        flags: 0,
+    };
+
+    let sq = 27;
+    let runs = 1_000_000;
+
+    // warm up
+    for _ in 0..100 {
+        bd.make_move(mv);
+    }
+
+    // time measurement
+    let start = Instant::now();
+    for _ in 0..runs {
+        bd.make_move(mv);
     }
     let dur = start.elapsed();
 
