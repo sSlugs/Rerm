@@ -2,7 +2,10 @@ pub mod board;
 use board::board::*;
 pub mod move_gen;
 use move_gen::pseudo_gen::*;
+
+use crate::GUI::guimain;
 pub mod tests;
+pub mod GUI;
 pub mod constants;
 
 fn main() {
@@ -24,4 +27,6 @@ fn main() {
     println!("{}",bd.in_check());
     
     bd.print();
+
+    guimain::main();
 }

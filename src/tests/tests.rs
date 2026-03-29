@@ -192,12 +192,14 @@ fn bench_push_pseudo_move() {
     // warm up
     for _ in 0..100 {
         bd.make_move(mv);
+        bd = Board::init_new();
     }
 
     // time measurement
     let start = Instant::now();
     for _ in 0..runs {
         bd.make_move(mv);
+        bd = Board::init_new();
     }
     let dur = start.elapsed();
 

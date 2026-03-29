@@ -19,9 +19,13 @@ pub struct Undo {
     pub captured_piece: Option<PieceType>,
     pub captured_square: Option<u8>,
 
+    pub castled: u8, // similiar to castling rights in board. first 4 bits, determine if the move was a castle respectively. wqc wkc bqc bkc : 0001 0010 0100 1000
+
     pub old_castle_rights: u8,
-    pub old_ep_square: Option<u64>,
+    pub old_ep_square: Option<u64>, //
     pub old_halfmove_clock: u8,
+
+    pub moved_piece: PieceType, 
 }
 
 impl Board {
@@ -29,6 +33,8 @@ impl Board {
     pub fn make_move(&mut self, mv: Move) -> Undo {
         let from = mv.from as u8;
         let to   = mv.to   as u8;
+
+        let mut castled = 0;
 
         let old_castle_rights   = self.castle_rights;
         let old_ep_square       = self.ep_sq; 
@@ -42,7 +48,7 @@ impl Board {
         let (moving_pt, side) = self.piece_at_square(from as usize).expect("no piece on from");
 
         #[inline(always)]
-        fn clear_rights_on_rook_move(rights: &mut u8, from: u8) {
+        fn clear_rights_on_rook_move(rights: &mut u8, from: u8) { // clears castling rights when given the starting square of the rook, ex. (63/h8) cleres black kingside casting reights
             match from {
                 0  => *rights &= 0b0000_1110, // a1: clear WQ
                 7  => *rights &= 0b0000_1101, // h1: clear WK
@@ -53,7 +59,7 @@ impl Board {
         }
 
         #[inline(always)]
-        fn clear_rights_on_rook_capture(rights: &mut u8, sq: u8) {
+        fn clear_rights_on_rook_capture(rights: &mut u8, sq: u8) { // same as above just if your rook is captured
             match sq {
                 0  => *rights &= 0b0000_1110, // a1 rook gone -> no WQ
                 7  => *rights &= 0b0000_1101, // h1 rook gone -> no WK
@@ -90,26 +96,30 @@ impl Board {
                 }
             }
 
-            match (moving_pt, from, to) {
+            match (moving_pt, from, to) { // if the move is castling then move rook
                 (PieceType::King, 4, 6) => {  // White O-O: h1 -> f1
                     self.clear_square(7);
                     self.set_square(5, side, PieceType::Rook);
                     self.castle_rights &= 0b0000_1100; // clear WK|WQ
+                    castled = 0b0000_0010
                 }
                 (PieceType::King, 4, 2) => {  // White O-O-O: a1 -> d1
                     self.clear_square(0);
                     self.set_square(3, side, PieceType::Rook);
                     self.castle_rights &= 0b0000_1100;
+                    castled = 0b0000_0001
                 }
                 (PieceType::King, 60, 62) => { // Black O-O: h8 -> f8
                     self.clear_square(63);
                     self.set_square(61, side, PieceType::Rook);
                     self.castle_rights &= 0b0000_0011; // clear BK|BQ
+                    castled = 0b0000_1000
                 }
                 (PieceType::King, 60, 58) => { // Black O-O-O: a8 -> d8
                     self.clear_square(56);
                     self.set_square(59, side, PieceType::Rook);
                     self.castle_rights &= 0b0000_0011;
+                    castled = 0b0000_0100
                 }
                 _ => {}
             }
@@ -155,7 +165,53 @@ impl Board {
             captured_square,
             old_castle_rights,
             old_ep_square,
+            castled,
             old_halfmove_clock,
+            moved_piece: moving_pt,
         }
+    }
+
+    pub fn unmake_move(&mut self, mv: Move, u: &Undo) {
+        // 1) restore meta first
+        self.turn            = !self.turn;            // or: self.turn = !self.turn;
+        self.castle_rights   = u.old_castle_rights;
+        self.ep_sq           = u.old_ep_square;
+        self.halfmove_clock  = u.old_halfmove_clock;
+
+        let from = mv.from as usize;
+        let to   = mv.to   as usize;
+        let side = self.turn; // after restoring turn, this is the mover’s colour
+
+        // 2) special cases in reverse order of make()
+
+        // a) If promotion, turn promoted piece at 'to' back into pawn first
+        if mv.promotion_piece.is_some() {
+            // at 'to' there’s the promoted piece; replace with pawn of 'side'
+            self.clear_square(to);
+            self.set_square(to, side, PieceType::Pawn);
+        }
+
+        // b) If castling, move rook back
+        if u.castled != 0 {
+            match (u.moved_piece, mv.from, mv.to) {
+                (PieceType::King, 4, 6)   => { self.clear_square(5);  self.set_square(7,  side, PieceType::Rook); }
+                (PieceType::King, 4, 2)   => { self.clear_square(3);  self.set_square(0,  side, PieceType::Rook); }
+                (PieceType::King, 60, 62) => { self.clear_square(61); self.set_square(63, side, PieceType::Rook); }
+                (PieceType::King, 60, 58) => { self.clear_square(59); self.set_square(56, side, PieceType::Rook); }
+                _ => {}
+            }
+        }
+
+        // 3) move the moved piece back: 'to' -> 'from'
+        //    (if promo, we already changed the piece at 'to' into a pawn above)
+        self.clear_square(to);
+        self.set_square(from, side, u.moved_piece);
+
+        // 4) restore captured piece (normal or EP) at the recorded square
+        if let (Some(cpt), Some(cs)) = (u.captured_piece, u.captured_square) {
+            // captured piece belongs to the opposite side
+            self.set_square(cs as usize, !side, cpt);
+        }       
+
     }
 }

@@ -48,7 +48,7 @@ pub struct Board {
     pub mailbox: [u8;64],
 
     pub turn: Colour,
-    pub castle_rights: u8, // first 4 bits respecetivley 0000. wqc wkc bqc bkc 0001 0010 0100 1000, 1 means castling allowed
+    pub castle_rights: u8, // first 4 bits respecetivley 0000. wqc wkc bqc bkc : 0001 0010 0100 1000, 1 means castling allowed
 
     pub ep_sq: Option<u64>,
 
@@ -57,7 +57,7 @@ pub struct Board {
 
 impl Board { // Board manipulation functions
     #[inline(always)]
-    pub fn set_square(&mut self, sq: usize, colour: Colour, piece: PieceType) {
+    pub fn set_square(&mut self, sq: usize, colour: Colour, piece: PieceType) { // sets a square 0-63 with colour and piece
         let m       = BITMASKS[sq];
         let idx_new = (colour as usize)*6 + (piece as usize);
 
@@ -81,7 +81,7 @@ impl Board { // Board manipulation functions
     }
 
     #[inline(always)]
-    pub fn clear_square(&mut self,sq: usize) { //clears square on board
+    pub fn clear_square(&mut self,sq: usize) { //clears square on board (0-63)
         let old = self.mailbox[sq];
 
         if old == EMPTY { return; }
@@ -95,7 +95,7 @@ impl Board { // Board manipulation functions
     }
 
     #[inline(always)]
-    pub fn piece_at_square(&mut self,sq: usize) -> Option<(PieceType,Colour)> { // returns piecetype and colour of square of board
+    pub fn piece_at_square(&mut self,sq: usize) -> Option<(PieceType,Colour)> { // returns piecetype and colour of square (0-63) of board
         if sq > 63 {
             panic!("piece_at_square: OOB error, sq given does not exist on the board!")
         }
@@ -124,7 +124,7 @@ impl Board { // Check/Help functions
     fn king_square(&self) -> usize {
         let king_bb = self.pieces[self.turn as usize][5];
         king_bb.trailing_zeros() as usize
-        //ifu r getting errors here or at is_square_attacked its bc ur using an empty board and there isnt a king so its overflowing at 64 and u didnt wanna add error handling
+        //if ur getting errors here or at is_square_attacked its bc ur using an empty board and there isnt a king so its overflowing at 64 and u didnt wanna add error handling
     }
 
     #[inline(always)]
