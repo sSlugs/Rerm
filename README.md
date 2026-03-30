@@ -12,6 +12,7 @@ Rerm is a chess engine written enterely from scratch in the Rust language.
 
 # Features
 Bitboard representation for board.
+hyperbola quintessence move gen.
 
 # Upcoming Features
 magic bitboard move gen

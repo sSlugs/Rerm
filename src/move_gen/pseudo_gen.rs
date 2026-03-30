@@ -49,7 +49,7 @@ pub fn rook_attacks(sq: usize,occ: &[Bitboard;3],colour: Colour) -> Bitboard{
 
 #[inline(always)]
 pub fn bishop_attacks(sq: usize,occ: &[Bitboard;3],colour: Colour) -> Bitboard {
-    // Precomputed masks used (see below)
+    // Precomputed masks used 
     let bb = 1u64 << sq;
     let two_bb = bb << 1;
 
@@ -101,7 +101,7 @@ pub fn pawn_attacks(pieces: &[[Bitboard; 6]],occ: &[Bitboard; 3],colour: Colour,
     let mut ep_attack = 0;
 
 
-    if colour as usize == 0 {
+    if colour == Colour::White {
         // WHITE
 
         let sp = (pawns << 8) & empty;

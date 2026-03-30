@@ -26,6 +26,10 @@ pub struct Undo {
     pub old_halfmove_clock: u8,
 
     pub moved_piece: PieceType, 
+
+    pub from: u8, //Exact same as from in move object,just the starting square
+    pub to: u8,
+    pub promotion_piece: Option<PieceType>,
 }
 
 impl Board {
@@ -168,24 +172,28 @@ impl Board {
             castled,
             old_halfmove_clock,
             moved_piece: moving_pt,
+
+            from: mv.from,
+            to: mv.to,
+            promotion_piece: mv.promotion_piece,
         }
     }
 
-    pub fn unmake_move(&mut self, mv: Move, u: &Undo) {
+    pub fn unmake_move(&mut self, u: &Undo) {
         // 1) restore meta first
         self.turn            = !self.turn;            // or: self.turn = !self.turn;
         self.castle_rights   = u.old_castle_rights;
         self.ep_sq           = u.old_ep_square;
         self.halfmove_clock  = u.old_halfmove_clock;
 
-        let from = mv.from as usize;
-        let to   = mv.to   as usize;
+        let from = u.from as usize;
+        let to   = u.to   as usize;
         let side = self.turn; // after restoring turn, this is the mover’s colour
 
         // 2) special cases in reverse order of make()
 
         // a) If promotion, turn promoted piece at 'to' back into pawn first
-        if mv.promotion_piece.is_some() {
+        if u.promotion_piece.is_some() {
             // at 'to' there’s the promoted piece; replace with pawn of 'side'
             self.clear_square(to);
             self.set_square(to, side, PieceType::Pawn);
@@ -193,7 +201,7 @@ impl Board {
 
         // b) If castling, move rook back
         if u.castled != 0 {
-            match (u.moved_piece, mv.from, mv.to) {
+            match (u.moved_piece, u.from, u.to) {
                 (PieceType::King, 4, 6)   => { self.clear_square(5);  self.set_square(7,  side, PieceType::Rook); }
                 (PieceType::King, 4, 2)   => { self.clear_square(3);  self.set_square(0,  side, PieceType::Rook); }
                 (PieceType::King, 60, 62) => { self.clear_square(61); self.set_square(63, side, PieceType::Rook); }

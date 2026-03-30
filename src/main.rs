@@ -13,9 +13,9 @@ fn main() {
 
     //let n = pawn_attacks(&bd.pieces,&bd.occupancy,bd.turn,bd.ep_sq).2;
 
-    let n = king_attacks(18,&bd.occupancy,bd.turn);
+    let n = pawn_attacks(&bd.pieces,&bd.occupancy,bd.turn,bd.ep_sq);
 
-    let bin = format!("{:064b}", n);
+    let bin = format!("{:064b}", n.4);
 
     // rank 8 printed first, rank 1 printed last
     for chunk in bin.as_bytes().chunks(8) {

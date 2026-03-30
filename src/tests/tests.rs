@@ -171,7 +171,7 @@ fn bench_board_manipulation() {
     let dur = start.elapsed();
 
     let ns_per_call = (dur.as_secs_f64() * 1e9) / (runs as f64);
-    println!("rook_attacks avg: {:.3} ns/call", ns_per_call);
+    println!("board manipulation avg (bd.in_check(): {:.3} ns/call", ns_per_call);
 }
 
 #[test]
