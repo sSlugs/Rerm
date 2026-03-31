@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
+use std::io::{self, Write};
 
-use crate::{board::{board::{Board, PieceType}, moves::{Move, Undo}}, move_gen::pseudo_gen::pawn_attacks};
+use crate::{board::{board::{Board, Colour, PieceType, inverse_index_change}, moves::{Move, Undo}}, move_gen::pseudo_gen::pawn_attacks};
 
 const SQ_LENGTH: f32 = 100.0;
 
@@ -67,6 +68,32 @@ fn draw_pieces(bd: &mut Board,textures: &Texture2D) {
     }
 }
 
+fn draw_pseudo_legal_moves(bd: &mut Board,sq:u8) {
+    let mut moves: Vec<Move>= Vec::with_capacity(1024);
+    let mut pseudo_legal_sqs: Vec<u8> = Vec::new();
+    let row = (sq % 8) as f32;
+    let col = (7 - (sq / 8)) as f32;
+    let (sq_x,sq_y) = row_col_to_x_y(&row, &col);
+    draw_circle(sq_x, sq_y, 25.0, RED);
+    bd.gen_psuedo_legal_moves(&mut moves);
+
+    for mv in moves {
+        if mv.from == sq {
+            pseudo_legal_sqs.push(mv.to);
+        }
+    }
+
+    if pseudo_legal_sqs.is_empty() {
+        return;
+    }
+
+    for msq in pseudo_legal_sqs {
+        let row = (msq % 8) as f32;
+        let col = (7 - (msq / 8)) as f32;
+        let (sq_x,sq_y) = row_col_to_x_y(&row, &col);
+        draw_circle(sq_x, sq_y, 25.0, BLACK);
+    }
+}
 
 #[macroquad::main("Sprite")]
 pub async fn main() {
@@ -74,6 +101,7 @@ pub async fn main() {
     let mut selected_square: Option<usize> = Option::None;
     let mut bd = Board::init_new();
     let mut move_list: Vec<Undo> = Vec::new();
+    //bd.set_square(54,Colour::White, PieceType::Pawn);
 
     loop {
         clear_background(BLACK);
@@ -81,22 +109,58 @@ pub async fn main() {
         let (x, y) = mouse_position();
         let col = (x/SQ_LENGTH).floor();
         let row = 7.0 - (y/SQ_LENGTH).floor();
-        //let (sq_y,sq_x) = row_col_to_x_y(&row, &col);
+        let mut ps_moves: Vec<Move> = Vec::with_capacity(1024);
+        bd.gen_psuedo_legal_moves(&mut ps_moves);
 
         draw_pieces(&mut bd,&textures);
-
+        if let Some(ssq) = selected_square {
+            draw_pseudo_legal_moves(&mut bd,ssq as u8);
+        }
     
         if is_mouse_button_pressed(MouseButton::Left) {
             if let Some(sq) = selected_square { 
-                if let Some(_) = bd.piece_at_square(sq) {
-                    if sq != (((col + 1.0) + row*8.0 )-1.0) as usize {
-                        let undo = bd.make_move(Move{
+                if let Some(piece) = bd.piece_at_square(sq) {
+                    let sq_to = col + row*8.0;
+                    if sq != sq_to as usize {
+                        let mut promo_piece = None;
+                        let mut flags = 0;
+
+                        if piece.0 == PieceType::Pawn {
+                            println!("-{}-",sq_to);
+                            if (sq_to/8.0).floor() == 7.0 {
+                                print!("\nPlease Input Promotion Piece (Q,R,B,N | Default Queen if none): ");
+                                let _ = io::stdout().flush();
+                                let mut input = String::new();
+                                io::stdin()
+                                    .read_line(&mut input)
+                                    .expect("Failed to read line");
+
+                                match input.to_ascii_lowercase().trim() {
+                                    "q" => promo_piece = Some(PieceType::Queen),
+                                    "r" => promo_piece = Some(PieceType::Rook),
+                                    "b" => promo_piece = Some(PieceType::Bishop),
+                                    "n" => promo_piece = Some(PieceType::Knight),
+                                    _ => promo_piece = Some(PieceType::Queen),
+                                }
+                            } else if let Some(e_piece) = bd.piece_at_square(inverse_index_change(bd.turn, sq_to as usize, 8)) {
+                                if e_piece.0 == PieceType::Pawn && e_piece.1 == !bd.turn {
+                                    if bd.piece_at_square(sq_to as usize) == None {
+                                        flags = 1;
+                                    }
+                                }
+                            }
+                        }
+                        let mv = Move{
                         from: sq as u8,
-                        to: (((col + 1.0) + row*8.0 )-1.0) as u8,
-                        promotion_piece: None,
-                        flags: 0,
-                        });
-                        move_list.push(undo);
+                        to: sq_to as u8,
+                        promotion_piece: promo_piece,
+                        flags,
+                        };
+
+                        if ps_moves.contains(&mv) {
+                            let undo = bd.make_move(mv);
+                            move_list.push(undo);
+                        }
                     }
                 }
                 selected_square = None
@@ -117,17 +181,7 @@ pub async fn main() {
         }
 
 
-        let n = pawn_attacks(&bd.pieces,&bd.occupancy,bd.turn,bd.ep_sq);
-
-        let bin = format!("{:064b}", n.0);
-
-        // rank 8 printed first, rank 1 printed last
-        for chunk in bin.as_bytes().chunks(8) {
-            // flip bits in the rank so A-file is on the left
-            let line: String = chunk.iter().rev().map(|&c| c as char).collect();
-            println!("{}", line);
-        }
-        println!("------------------------------");
+        
         
         next_frame().await;
     }

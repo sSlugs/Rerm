@@ -8,7 +8,7 @@ fn abs_diff(a: u8, b: u8) -> u8 {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Move {
-    pub from: u8,
+    pub from: u8, // a square from 0-63 (same with to)
     pub to: u8,
     pub promotion_piece: Option<PieceType>, 
     pub flags: u8, // per-bit. 0st:enpassant , 

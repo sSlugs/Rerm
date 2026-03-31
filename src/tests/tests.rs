@@ -3,6 +3,7 @@ use crate::board::moves::Move;
 use std::time::Instant;
 use crate::move_gen::pseudo_gen::{bishop_attacks, pawn_attacks, queen_attacks, rook_attacks,knight_attacks,king_attacks};
 use crate::board::board::*;
+use crate::move_gen::{self, legal_move_gen::*};
 
 #[test]
 fn bench_rook_attacks() {
@@ -37,7 +38,7 @@ fn bench_bishop_attacks() {
     let runs = 1_000_000;
 
     // warm up
-    for _ in 0..100 {
+    for _ in 0..1000 {
         bishop_attacks(sq, &bd.occupancy,bd.turn);
     }
 
@@ -49,7 +50,7 @@ fn bench_bishop_attacks() {
     let dur = start.elapsed();
 
     let ns_per_call = (dur.as_secs_f64() * 1e9) / (runs as f64);
-    println!("rook_attacks avg: {:.3} ns/call", ns_per_call);
+    println!("bishop_attacks avg: {:.3} ns/call", ns_per_call);
 }
 
 #[test]
@@ -175,34 +176,26 @@ fn bench_board_manipulation() {
 }
 
 #[test]
-fn bench_push_pseudo_move() {
-
+fn bench_push_pseudo_moves() {
     let mut bd = Board::init_new();
+    let mut moves: Vec<Move> = Vec::with_capacity(1024); // always make with capacity
+    bd.print();
 
-    let mv: Move = Move{
-        from: 10,
-        to: 18,
-        promotion_piece: None, 
-        flags: 0,
-    };
-
-    let sq = 27;
     let runs = 1_000_000;
 
     // warm up
     for _ in 0..100 {
-        bd.make_move(mv);
-        bd = Board::init_new();
+        bd.gen_psuedo_legal_moves(&mut moves);
     }
 
     // time measurement
     let start = Instant::now();
     for _ in 0..runs {
-        bd.make_move(mv);
-        bd = Board::init_new();
+        bd.gen_psuedo_legal_moves(&mut moves);
     }
     let dur = start.elapsed();
 
     let ns_per_call = (dur.as_secs_f64() * 1e9) / (runs as f64);
-    println!("rook_attacks avg: {:.3} ns/call", ns_per_call);
+    println!("gen pseudo moves avg: {:.3} ns/call", ns_per_call);
+    println!("{}",moves.len());
 }

@@ -87,9 +87,9 @@ impl Board { // Board manipulation functions
         if old == EMPTY { return; }
 
         let nm       = !BITMASKS[sq];
-        self.pieces[old as usize / 6][old as usize % 6] ^= nm;
-        self.occupancy[old as usize / 6] ^= nm;
-        self.occupancy[2]               ^= nm;
+        self.pieces[old as usize / 6][old as usize % 6] &= nm;
+        self.occupancy[old as usize / 6] &= nm;
+        self.occupancy[2] &= nm;
 
         self.mailbox[sq] = EMPTY;
     }
@@ -97,6 +97,9 @@ impl Board { // Board manipulation functions
     #[inline(always)]
     pub fn piece_at_square(&mut self,sq: usize) -> Option<(PieceType,Colour)> { // returns piecetype and colour of square (0-63) of board
         if sq > 63 {
+            if sq == 64 {
+                return None
+            }
             panic!("piece_at_square: OOB error, sq given does not exist on the board!")
         }
         let square = self.mailbox[sq];
@@ -214,7 +217,7 @@ impl Board { // Init functions
                         0b11111111_11111111_00000000_00000000_00000000_00000000_11111111_11111111],
 
             mailbox: [
-                3, 1, 2, 4, 5, 2, 1, 3,
+                3, 1, 2, 4, 5, 2, 1, 3, // top left = a1 / 0,0
                 0, 0, 0, 0, 0, 0, 0, 0,
                 EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,
                 EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,EMPTY,
@@ -285,5 +288,17 @@ impl Board { // UI / UX
             print!("{} ", letter);
         }
         println!();
+    }
+}
+
+#[inline(always)]
+pub fn inverse_index_change(colour:Colour,input: usize,amt: usize) -> usize { // changes index for white it goes down for black it goes up
+    if colour == Colour::White {
+        if (input as i32) - (amt as i32) < 0 {
+            return 64;
+        }
+        return input - amt;
+    } else {
+        return input + amt;
     }
 }

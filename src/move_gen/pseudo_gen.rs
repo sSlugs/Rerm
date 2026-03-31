@@ -49,6 +49,9 @@ pub fn rook_attacks(sq: usize,occ: &[Bitboard;3],colour: Colour) -> Bitboard{
 
 #[inline(always)]
 pub fn bishop_attacks(sq: usize,occ: &[Bitboard;3],colour: Colour) -> Bitboard {
+
+    let test_occ = occ[2] & !BITMASKS[sq]; // doing this to avoid the problem where it doesnt generate moves below the bishop if there is a bishop on the sqare in the occ is 7ns delay, please fix!!!
+
     // Precomputed masks used 
     let bb = 1u64 << sq;
     let two_bb = bb << 1;
@@ -57,8 +60,8 @@ pub fn bishop_attacks(sq: usize,occ: &[Bitboard;3],colour: Colour) -> Bitboard {
     let diag_mask = DIAG_MASKS[sq];
     let anti_diag_mask = ANTI_MASKS[sq];
 
-    let occ_diag      = occ[2] & diag_mask;
-    let occ_anti_diag = occ[2] & anti_diag_mask;
+    let occ_diag      = test_occ & diag_mask;
+    let occ_anti_diag = test_occ & anti_diag_mask;
 
     let left_diag  = occ_diag.wrapping_sub(two_bb);
     let right_diag = (occ_diag.reverse_bits()
@@ -89,10 +92,10 @@ pub fn queen_attacks(sq: usize,occ: &[Bitboard;3],colour: Colour) -> Bitboard {
 //              \/
 
 #[inline(always)]
-pub fn pawn_attacks(pieces: &[[Bitboard; 6]],occ: &[Bitboard; 3],colour: Colour,ep_square: Option<Bitboard>) -> (Bitboard, Bitboard, Bitboard, Bitboard, Bitboard) {
-    let empty = !occ[2];
-    let pawns = pieces[colour as usize][0];
-    let enemy = occ[colour.opposite() as usize];
+pub fn pawn_attacks(pieces: &[[Bitboard; 6]],occ: &[Bitboard; 3],colour: Colour,ep_square: Option<Bitboard>) -> [Bitboard;6] {
+    let empty = !occ[2]; // occupancys of where every piece isnt
+    let pawns = pieces[colour as usize][0]; // curent turns colour pawns occ
+    let enemy = occ[colour.opposite() as usize]; // enemy occupancy
 
     let mut single_pushes = 0;
     let mut double_pushes = 0;
@@ -123,12 +126,11 @@ pub fn pawn_attacks(pieces: &[[Bitboard; 6]],occ: &[Bitboard; 3],colour: Colour,
         captures   |= (cap_left | cap_right) & !RANK_8;
 
         if let Some(ep_sq) = ep_square {
-            ep_attack = (left_attacks & ep_sq) | (right_attacks & ep_sq)
+            ep_attack = (left_attacks & ep_sq) | (right_attacks & ep_sq) // unfinished
         }
 
     } else {
         // BLACK 
-
         let sp = (pawns >> 8) & empty;
         promotions |= sp & RANK_1;
         single_pushes |= sp & !RANK_1;
@@ -150,8 +152,7 @@ pub fn pawn_attacks(pieces: &[[Bitboard; 6]],occ: &[Bitboard; 3],colour: Colour,
             ep_attack = (left_attacks & ep_sq) | (right_attacks & ep_sq)
         }
     }
-
-    (single_pushes, double_pushes, captures, promotions, ep_attack)
+    [single_pushes, double_pushes, captures, promotions, ep_attack,pawns]
 
 }
 
