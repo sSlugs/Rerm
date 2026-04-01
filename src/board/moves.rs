@@ -11,7 +11,7 @@ pub struct Move {
     pub from: u8, // a square from 0-63 (same with to)
     pub to: u8,
     pub promotion_piece: Option<PieceType>, 
-    pub flags: u8, // per-bit. 0st:enpassant , 
+    pub flags: u8, // per-bit. 0st:enpassant , 7th/last: is legal move
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -34,7 +34,7 @@ pub struct Undo {
 
 impl Board {
     #[inline(always)]
-    pub fn make_move(&mut self, mv: Move) -> Undo {
+    pub fn make_move(&mut self, mv: &Move) -> Undo {
         let from = mv.from as u8;
         let to   = mv.to   as u8;
 

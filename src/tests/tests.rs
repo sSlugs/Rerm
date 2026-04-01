@@ -176,7 +176,31 @@ fn bench_board_manipulation() {
 }
 
 #[test]
-fn bench_push_pseudo_moves() {
+fn piece_at_square() {
+
+    let mut bd = Board::init_new();
+
+    let sq = 27;
+    let runs = 1_000_000;
+
+    // warm up
+    for _ in 0..100 {
+        bd.piece_at_square(0);
+    }
+
+    // time measurement
+    let start = Instant::now();
+    for _ in 0..runs {
+        bd.piece_at_square(0);
+    }
+    let dur = start.elapsed();
+
+    let ns_per_call = (dur.as_secs_f64() * 1e9) / (runs as f64);
+    println!("Piece at square func: {:.3} ns/call", ns_per_call);
+}
+
+#[test]
+fn bench_gen_pseudo_moves() {
     let mut bd = Board::init_new();
     let mut moves: Vec<Move> = Vec::with_capacity(1024); // always make with capacity
     bd.print();
@@ -192,6 +216,33 @@ fn bench_push_pseudo_moves() {
     let start = Instant::now();
     for _ in 0..runs {
         bd.gen_psuedo_legal_moves(&mut moves);
+    }
+    let dur = start.elapsed();
+
+    let ns_per_call = (dur.as_secs_f64() * 1e9) / (runs as f64);
+    println!("gen pseudo moves avg: {:.3} ns/call", ns_per_call);
+    println!("{}",moves.len());
+}
+
+#[test]
+fn bench_gen_legal_moves() {
+    let mut bd = Board::init_new();
+    let mut moves: Vec<Move> = Vec::with_capacity(1024); // always make with capacity
+    bd.print();
+
+    let runs = 1_000_000;
+
+    // warm up
+    for _ in 0..100 {
+        bd.gen_psuedo_legal_moves(&mut moves);
+        bd.legalize_moves(&mut moves);
+    }
+
+    // time measurement
+    let start = Instant::now();
+    for _ in 0..runs {
+        bd.gen_psuedo_legal_moves(&mut moves);
+        bd.legalize_moves(&mut moves);
     }
     let dur = start.elapsed();
 

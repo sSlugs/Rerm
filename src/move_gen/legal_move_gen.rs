@@ -138,8 +138,49 @@ impl Board {
         // all logic for pseudo castling (just checks if u have castling rights, and theres no pieces in way)
         let mut cr = self.castle_rights;
         while cr != 0 {
+            let castle_type = cr.trailing_zeros();
             
+            match castle_type {
+                0 => {// white queen side / 0-0-0 W
+                    if self.piece_at_square(1) == None && self.piece_at_square(2) == None && self.piece_at_square(3) == None && self.turn == Colour::White {
+                       pseudo_legal_moves.push(Move { from: 4, to: 2, promotion_piece: None, flags: 0 }); 
+                    }
+                },
+                1 => { // white king side / 0-0 W
+                    if self.piece_at_square(5) == None && self.piece_at_square(6) == None && self.turn == Colour::White {
+                       pseudo_legal_moves.push(Move { from: 4, to: 6, promotion_piece: None, flags: 0 }); 
+                    }
+                },
+                2 => { // black queen side / 0-0-0 B
+                    if self.piece_at_square(59) == None && self.piece_at_square(58) == None && self.piece_at_square(57) == None && self.turn == Colour::Black {
+                       pseudo_legal_moves.push(Move { from: 60, to: 58, promotion_piece: None, flags: 0 }); 
+                    }
+                },
+                3 => { // black king side / 0-0 B
+                    if self.piece_at_square(61) == None && self.piece_at_square(62) == None && self.turn == Colour::Black {
+                       pseudo_legal_moves.push(Move { from: 60, to: 62, promotion_piece: None, flags: 0 }); 
+                    }
+                },
+                _ => unreachable!(),
+            }
+
+            cr &= cr - 1
         }
 
+    }
+
+    pub fn legalize_moves(&mut self,pseudo_legal_moves: &mut Vec<Move>) {
+
+        for mv in pseudo_legal_moves.iter_mut() {
+            let undo = self.make_move(mv); // changes turn
+            self.turn = !self.turn;
+            if self.in_check() == false {
+                mv.flags |= 0b1000_0000;
+            }
+            self.turn = !self.turn;
+            self.unmake_move(&undo); 
+        }
+        
+        pseudo_legal_moves.retain(|x| x.flags & 128 != 0);
     }
 }

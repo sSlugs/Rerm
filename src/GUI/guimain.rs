@@ -126,7 +126,6 @@ pub async fn main() {
                         let mut flags = 0;
 
                         if piece.0 == PieceType::Pawn {
-                            println!("-{}-",sq_to);
                             if (sq_to/8.0).floor() == 7.0 {
                                 print!("\nPlease Input Promotion Piece (Q,R,B,N | Default Queen if none): ");
                                 let _ = io::stdout().flush();
@@ -158,7 +157,7 @@ pub async fn main() {
                         };
 
                         if ps_moves.contains(&mv) {
-                            let undo = bd.make_move(mv);
+                            let undo = bd.make_move(&mv);
                             move_list.push(undo);
                         }
                     }
