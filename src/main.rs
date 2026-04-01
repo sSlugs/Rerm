@@ -1,6 +1,7 @@
 pub mod board;
 use board::board::*;
 pub mod move_gen;
+pub mod engine;
 use move_gen::pseudo_gen::*;
 
 use crate::GUI::guimain;
